@@ -44,6 +44,7 @@ namespace Ninject.Moq
 		{
 			ConstructorInjector injector = GetInjector(context.Request.Service);
 			var mock = injector.Invoke() as Mock;
+			OnMockCreated(mock);
 			return mock.Object;
 		}
 
@@ -69,7 +70,38 @@ namespace Ninject.Moq
 		/// <returns>The created callback.</returns>
 		public static Func<IContext, IProvider> GetCreationCallback()
 		{
+
 			return ctx => new MockProvider(ctx.Kernel.Components.Get<IInjectorFactory>());
+		}
+
+		/// <summary>
+		/// Gets a callback that creates an instance of the <see cref="MockProvider"/>.
+		/// </summary>
+		/// <returns>The created callback.</returns>
+		public static Func<IContext, IProvider> GetCreationCallback(MockingKernel mockingKernel)
+		{
+			return ctx =>
+			{
+				var provider = new MockProvider(ctx.Kernel.Components.Get<IInjectorFactory>());
+				mockingKernel.AddProvider(provider);
+				return provider;
+			};
+		}
+
+		/// <summary>
+		/// Occurs when [created].
+		/// </summary>
+		[CLSCompliant(false)]
+		public event MockCreatedEventHandler MockCreated;
+
+		/// <summary>
+		/// Called when [created].
+		/// </summary>
+		/// <param name="mock">The mock.</param>
+		[CLSCompliant(false)]
+		protected virtual void OnMockCreated(Mock mock)
+		{
+			MockCreated(this, new MockCreatedEventArgs(mock));
 		}
 	}
 }

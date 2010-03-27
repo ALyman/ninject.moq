@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using Moq;
 using Ninject.Activation.Caching;
 using Ninject.Planning.Bindings;
 
@@ -10,6 +12,9 @@ namespace Ninject.Moq
 	/// </summary>
 	public class MockingKernel : StandardKernel
 	{
+		List<MockProvider> mockProviders = new List<MockProvider>();
+		HashSet<Mock> mocks = new HashSet<Mock>();
+
 		/// <summary>
 		/// Clears the kernel's cache, immediately deactivating all activated instances regardless of scope.
 		/// This does not remove any modules, extensions, or bindings.
@@ -17,6 +22,12 @@ namespace Ninject.Moq
 		public void Reset()
 		{
 			Components.Get<ICache>().Clear();
+			mocks.Clear();
+			foreach (var provider in mockProviders)
+			{
+				provider.MockCreated -= new MockCreatedEventHandler(provider_MockCreated);
+			}
+			mockProviders.Clear();
 		}
 
 		/// <summary>
@@ -28,7 +39,7 @@ namespace Ninject.Moq
 		{
 			var binding = new Binding(service)
 			{
-				ProviderCallback = MockProvider.GetCreationCallback(),
+				ProviderCallback = MockProvider.GetCreationCallback(this),
 				ScopeCallback = ctx => null,
 				IsImplicit = true
 			};
@@ -36,6 +47,26 @@ namespace Ninject.Moq
 			AddBinding(binding);
 
 			return true;
+		}
+
+		internal void AddProvider(MockProvider provider)
+		{
+			mockProviders.Add(provider);
+			provider.MockCreated += new MockCreatedEventHandler(provider_MockCreated);
+		}
+
+		void provider_MockCreated(object sender, MockCreatedEventArgs e)
+		{
+			mocks.Add(e.Mock);
+		}
+
+		/// <summary>
+		/// Verifies all of the instantiated mocks.
+		/// </summary>
+		public void VerifyAll()
+		{
+			foreach (var mock in mocks)
+				mock.VerifyAll();
 		}
 	}
 }

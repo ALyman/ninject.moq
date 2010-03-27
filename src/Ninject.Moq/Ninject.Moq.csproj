@@ -49,6 +49,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ExtensionsForBindingSyntax.cs" />
+    <Compile Include="ExtensionsForResolution.cs" />
+    <Compile Include="MockCreatedEvent.cs" />
     <Compile Include="MockingKernel.cs" />
     <Compile Include="MockProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
